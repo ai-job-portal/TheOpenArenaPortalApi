@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <changeSet id="001-create-employer-table" author="dheeraj">
+        <createTable tableName="employer">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="website" type="VARCHAR(255)"/>
+            <column name="description" type="TEXT"/>
+            <column name="industry" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_size" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-roles-table" author="dheeraj">
+        <createTable tableName="roles">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="003-create-recruiter-table" author="yourname">
+        <createTable tableName="recruiter">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(80)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(120)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)"/>
+            <column name="mobile" type="VARCHAR(20)"/>
+            <column name="employer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="recruiter"
+                                 baseColumnNames="employer_id"
+                                 constraintName="fk_recruiter_employer"
+                                 referencedTableName="employer"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="004-create-recruiter-roles-table" author="dheeraj">
+        <createTable tableName="recruiter_roles">
+            <column name="recruiter_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="recruiter_roles" baseColumnNames="recruiter_id"
+                                 constraintName="fk_recruiter_roles_recruiter" referencedTableName="recruiter"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="recruiter_roles" baseColumnNames="role_id"
+                                 constraintName="fk_recruiter_roles_role" referencedTableName="roles"
+                                 referencedColumnNames="id"/>
+        <addPrimaryKey columnNames="recruiter_id, role_id" constraintName="pk_recruiter_roles"
+                       tableName="recruiter_roles"/>
+    </changeSet>
+
+    <changeSet id="005-add-initial-roles" author="dheeraj">
+        <insert tableName="roles">
+            <column name="name" value="ROLE_JOBSEEKER"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="name" value="ROLE_RECRUITER"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="name" value="ROLE_EMPLOYER"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="name" value="ROLE_JARVIS"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="006-create-job-table" author="dheeraj">
+        <createTable tableName="job">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="experience_level" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="salary_range" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workplace_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="employment_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="educational_qualifications" type="VARCHAR(100)"/>
+            <column name="skills" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="about_company" type="TEXT"/>
+            <column name="post_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_openings" type="INT"/>
+            <column name="description" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="employer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="posted_by" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="job" baseColumnNames="employer_id"
+                                 constraintName="fk_job_employer" referencedTableName="employer"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="job" baseColumnNames="posted_by"
+                                 constraintName="fk_job_recruiter" referencedTableName="recruiter"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="007-create-jobseeker-table" author="dheeraj">
+        <createTable tableName="jobseeker">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(80)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(120)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)"/>
+            <column name="mobile" type="VARCHAR(20)"/>
+            <column name="skills" type="VARCHAR(500)"/>
+            <column name="resume_url" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="008-create-jobshare-table" author="dheeraj">
+        <createTable tableName="jobshare">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="job_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="shared_by" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="shared_with" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="shared_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="jobshare" baseColumnNames="job_id"
+                                 constraintName="fk_jobshare_job" referencedTableName="job"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="jobshare" baseColumnNames="shared_by"
+                                 constraintName="fk_jobshare_sharer" referencedTableName="recruiter"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="jobshare" baseColumnNames="shared_with"
+                                 constraintName="fk_jobshare_recipient" referencedTableName="recruiter"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="009-create-invitation-table" author="dheeraj">
+        <createTable tableName="invitation">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="employer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="used" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="role" type="VARCHAR(50)" defaultValue="recruiter"/>
+            <column name="email" type="VARCHAR(120)"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="invitation" baseColumnNames="employer_id"
+                                 constraintName="fk_invitation_employer" referencedTableName="employer"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="010-create-deletedrecruiter-table" author="dheeraj">
+        <createTable tableName="deletedrecruiter">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(80)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(120)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)"/>
+            <column name="mobile" type="VARCHAR(20)"/>
+            <column name="employer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deleted_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="deletedrecruiter" baseColumnNames="employer_id"
+                                 constraintName="fk_deletedrecruiter_employer" referencedTableName="employer"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="011-create-jarvis-table" author="dheeraj">
+        <createTable tableName="jarvis">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(80)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(120)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="012-create-skill-table" author="dheeraj">
+            <createTable tableName="skill">
+                <column name="id" type="INT" autoIncrement="true">
+                    <constraints primaryKey="true" nullable="false"/>
+                </column>
+                <column name="name" type="VARCHAR(150)">
+                    <constraints unique="true" nullable="false"/>
+                </column>
+                <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            </createTable>
+    </changeSet>
+    <changeSet id="013-create-city-table" author="yourname">
+        <createTable tableName="city">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addUniqueConstraint  columnNames="name, state" constraintName="uq_city_state"
+                              tableName="city"/>
+    </changeSet>
+
+    <changeSet id="014-create-qualification-table" author="dheeraj">
+        <createTable tableName="qualification">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="degree_type" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="specialisation" type="varchar(100)"/>
+            <column name="subtype" type="varchar(100)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addUniqueConstraint  columnNames="degree_type, specialisation, subtype" constraintName="uq_qualification"
+                              tableName="qualification"/>
+    </changeSet>
+    <changeSet id="015-create-recruiter-employer-table" author="dheeraj">
+        <createTable tableName="recruiteremployer">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="recruiter_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="employer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="recruiteremployer"
+                                 baseColumnNames="recruiter_id"
+                                 constraintName="fk_recruiter_employer_recruiter"
+                                 referencedTableName="recruiter"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="recruiteremployer"
+                                 baseColumnNames="employer_id"
+                                 constraintName="fk_recruiter_employer_employer"
+                                 referencedTableName="employer"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="016-create-job-seeker-roles-table" author="dheeraj">
+        <createTable tableName="job_seeker_roles">
+            <column name="job_seeker_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="job_seeker_roles"
+                                 baseColumnNames="job_seeker_id"
+                                 constraintName="fk_job_seeker_roles_job_seeker"
+                                 referencedTableName="jobseeker"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="job_seeker_roles"
+                                 baseColumnNames="role_id"
+                                 constraintName="fk_job_seeker_roles_role"
+                                 referencedTableName="roles"
+                                 referencedColumnNames="id"/>
+
+        <addPrimaryKey columnNames="job_seeker_id, role_id"
+                       constraintName="pk_job_seeker_roles"
+                       tableName="job_seeker_roles"/>
+    </changeSet>
+</databaseChangeLog>

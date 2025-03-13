@@ -1,0 +1,36 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+spring:
+  application:
+    name: openarenaportalapi # Or your chosen name
+  datasource:
+    url: jdbc:postgresql://localhost:4321/postgres
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver # This is usually not required, but good to include
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Important: See explanation below ,You can use "update" to update the schema in db as per the entities
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect # Important: Use the correct dialect
+    show-sql: true  # Optional: Logs SQL queries to the console (useful for debugging)
+    open-in-view: false # Optional: to handle lazy loading issue
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml  # Path to your master changelog
+    enabled: true # Make sure Liquibase is enabled (it is by default, but good to be explicit)
+
+  logging: # Added logging configuration
+    level:
+      root: INFO
+      org.springframework.web: DEBUG
+      org.hibernate.SQL: DEBUG  # Log SQL queries (same as show-sql: true)
+      org.hibernate.type.descriptor.sql: TRACE # Log parameter binding (VERY verbose, but useful for debugging)
+      com.example.openarenaportal: DEBUG # Replace with your application's package
+
+jwt:
+  secret: ${JWT_SECRET} # Replace
+  expirationMs: ${JWT_EXPIRATION_MS}
+  refreshExpirationMs: ${JWT_REFRESH_EXPIRATION_MS}
