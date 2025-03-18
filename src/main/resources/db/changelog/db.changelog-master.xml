@@ -5,4 +5,8 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
     <include file="classpath:/db/changelog/changes/001-initial-schema.xml"/>
     <include file="classpath:/db/changelog/changes/002-alter-job-post-date.xml"/>
+    <include file="classpath:/db/changelog/changes/jobseeker-auditing.xml"/>
+    <include file="classpath:/db/changelog/changes/recruiter-auditing.xml"/>
+    <include file="classpath:/db/changelog/changes/jarvis-roles.xml"/>
+    <include file="classpath:/db/changelog/changes/add-expiry-date-to-job.xml"/>
 </databaseChangeLog>

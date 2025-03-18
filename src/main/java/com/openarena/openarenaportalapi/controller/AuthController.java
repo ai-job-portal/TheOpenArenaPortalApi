@@ -1,182 +1,130 @@
 package com.openarena.openarenaportalapi.controller;
 
-
-import com.openarena.openarenaportalapi.dto.JobSeekerRegistrationRequest;
-import com.openarena.openarenaportalapi.dto.JobSeekerResponse;
-import com.openarena.openarenaportalapi.dto.LoginRequestDto;
-import com.openarena.openarenaportalapi.dto.LoginResponseDto;
-import com.openarena.openarenaportalapi.model.JobSeeker;
-import com.openarena.openarenaportalapi.service.JobSeekerService;
-import com.openarena.openarenaportalapi.service.UserDetailsServiceImpl;
+import com.openarena.openarenaportalapi.dto.*;
+import com.openarena.openarenaportalapi.service.AuthService;
 import com.openarena.openarenaportalapi.util.JwtTokenProvider;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.http.HttpServletRequest; // Import HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse; // Import HttpServletResponse
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.swing.*;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final JobSeekerService jobSeekerService; // Inject JobSeekerService
-
-    @Value("${jwt.expirationMs}")
-    private long jwtExpirationMs;
-
-    @Value("${jwt.refreshExpirationMs}")
-    private long refreshExpirationMs;
+    private final UserDetailsService userDetailsService;
+    private static final String ACCESS_TOKEN_KEY = "accessToken";
+    private static final String REFRESH_TOKEN_KEY = "refreshToken";
 
     @Autowired
-    public AuthController(AuthenticationManager authenticationManager, UserDetailsServiceImpl userDetailsService,
-                          JwtTokenProvider jwtTokenProvider, JobSeekerService jobSeekerService) { // Add to constructor
-        this.authenticationManager = authenticationManager;
-        this.userDetailsService = userDetailsService;
+    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider, UserDetailsService userDetailsService) {
+        this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
-        this.jobSeekerService = jobSeekerService; // Initialize
+        this.userDetailsService = userDetailsService;
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequestDto loginRequest,
-                                              HttpServletResponse response) {
-
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Generate both access and refresh tokens
-            String accessToken = jwtTokenProvider.generateToken(authentication);
-            String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
-
-            // Create cookies (HTTP-only and secure)
-            Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
-            accessTokenCookie.setHttpOnly(true);
-            accessTokenCookie.setSecure(false); // Use only with HTTPS
-            accessTokenCookie.setPath("/"); // Available to the entire application
-            accessTokenCookie.setMaxAge((int) (jwtExpirationMs / 1000)); // Set cookie expiry (in seconds)
-
-
-            Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(false); // Use only with HTTPS
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge((int) (refreshExpirationMs / 1000)); // Set cookie expiry
-
-
-            // Add cookies to the response
-            response.addCookie(accessTokenCookie);
-            response.addCookie(refreshTokenCookie);
-
-            // Return a success response (you could include user details here if needed)
-            return ResponseEntity.ok(new LoginResponseDto(accessToken));
-
-        } catch (BadCredentialsException e) {
-            return new ResponseEntity<>(Map.of("message", "Incorrect username or password"),
-                    HttpStatus.UNAUTHORIZED);
-        } catch (Exception e) {
-            // Log the exception
-            return new ResponseEntity<>(Map.of("message", "An unexpected error occurred"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    // Build Login REST API
+    @PostMapping("/jobseeker/login")
+    public ResponseEntity<JWTAuthResponse> loginJobSeeker(@RequestBody JobSeekerLoginRequest request, HttpServletRequest httpServletRequest, HttpServletResponse response) {
+        JWTAuthResponse jwtAuthResponse = authService.jobSeekerLogin(request, httpServletRequest); // Pass HttpServletRequest
+        return ResponseEntity.ok(jwtAuthResponse); // Return token in body
     }
+
+    @PostMapping("/employer/login")
+    public ResponseEntity<JWTAuthResponse> loginEmployer(@RequestBody EmployerLoginRequest request, HttpServletRequest httpServletRequest, HttpServletResponse response) {
+        JWTAuthResponse jwtAuthResponse = authService.employerLogin(request, httpServletRequest); // Pass HttpServletRequest
+        return ResponseEntity.ok(jwtAuthResponse);  // Return token in body
+    }
+
+    // Build Register REST API for Employer
+    @PostMapping("/employer/register")
+    public ResponseEntity<EmployerRegistrationResponse> registerEmployer(@Valid @RequestBody EmployerRegistrationRequestDto registrationRequest) {
+        EmployerRegistrationResponse response = authService.registerEmployer(registrationRequest);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    // Build Login REST API for Jarvis
+    @PostMapping("/jarvis/login")
+    public ResponseEntity<JWTAuthResponse> loginJarvis(@RequestBody JarvisLoginRequest request, HttpServletRequest httpServletRequest, HttpServletResponse response) {
+        JWTAuthResponse jwtAuthResponse = authService.jarvisLogin(request, httpServletRequest); // Pass HttpServletRequest
+        return ResponseEntity.ok(jwtAuthResponse); // Return token in body
+    }
+
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<JWTAuthResponse> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         try {
-            String refreshToken = extractRefreshTokenFromCookie(request);
+            HttpSession session = request.getSession(false);  // Do NOT create a new session
+            if(session == null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            }
+            String refreshToken = (String) session.getAttribute(REFRESH_TOKEN_KEY);
+
             if (refreshToken != null && jwtTokenProvider.validateToken(refreshToken)) {
                 String username = jwtTokenProvider.getUsername(refreshToken);
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                // Generate new access token
-                String newAccessToken = jwtTokenProvider.generateToken(
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities())
-                        // Create Authentication object from UserDetails
+                Authentication newAuthentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities()
                 );
 
-                // Update the access token cookie
-                Cookie accessTokenCookie = new Cookie("accessToken", newAccessToken);
-                accessTokenCookie.setHttpOnly(true);
-                accessTokenCookie.setSecure(false);
-                accessTokenCookie.setPath("/");
-                accessTokenCookie.setMaxAge((int) (jwtExpirationMs / 1000));
-                response.addCookie(accessTokenCookie);
+                String newAccessToken = jwtTokenProvider.generateToken(newAuthentication);
+                String newRefreshToken = jwtTokenProvider.generateRefreshToken(newAuthentication); // Generate new refresh token
 
-                return ResponseEntity.ok(new LoginResponseDto(newAccessToken));
+                String role = userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.joining(","));
+                role = role.substring(role.lastIndexOf("_") + 1).toLowerCase();
+
+                JWTAuthResponse jwtAuthResponse = new JWTAuthResponse(); // Use the DTO
+                jwtAuthResponse.setAccessToken(newAccessToken);
+                jwtAuthResponse.setRefreshToken(newRefreshToken);
+                jwtAuthResponse.setUsername(userDetails.getUsername());
+                jwtAuthResponse.setRole(role);
+                // Do NOT set userId here. We'll get it from /users/me
+
+                // Store *new* tokens in session
+                session.setAttribute(ACCESS_TOKEN_KEY, newAccessToken);
+                session.setAttribute(REFRESH_TOKEN_KEY, newRefreshToken);
+
+                return ResponseEntity.ok(jwtAuthResponse);
+
+
             } else {
-                return new ResponseEntity<>(Map.of("message", "Invalid refresh token"), HttpStatus.UNAUTHORIZED);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null); // Or throw exception
             }
-        } catch (Exception e) {
-            // Log exception
-            return new ResponseEntity<>(Map.of("message", "Could not refresh token"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ExpiredJwtException ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired", ex);
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not refresh token", ex);
         }
     }
 
-    // Helper method to extract refresh token from cookies
-    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("refreshToken".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
+
+    @PostMapping("/jobseeker/register")
+    public ResponseEntity<JobSeekerRegistrationResponse> registerJobSeeker(@Valid @RequestBody JobSeekerRegistrationRequest registrationDTO) {
+        JobSeekerRegistrationResponse response = authService.registerJobSeeker(registrationDTO);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        // Invalidate access token cookie
-        Cookie accessTokenCookie = new Cookie("accessToken", null); // Set to null to remove
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false);
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(0); // Set max age to 0 to delete it immediately
-        response.addCookie(accessTokenCookie);
-
-        // Invalidate refresh token cookie
-        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false);
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(0); // Set max age to 0 to delete immediately
-        response.addCookie(refreshTokenCookie);
-
-        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
-    }
-
-    // --- Jobseeker Registration ---
-    @PostMapping("/register/jobseeker")
-    public ResponseEntity<?> registerJobSeeker(
-            @Valid @RequestBody JobSeekerRegistrationRequest registrationRequest) {
-        JobSeekerResponse response = jobSeekerService.registerJobSeeker(registrationRequest);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) { // Add HttpServletRequest
+        authService.logout(request); // Call logout method
+        return ResponseEntity.ok("Logged out successfully");
     }
 }

@@ -40,9 +40,14 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         // This is a simplified example.  A robust solution would use Spring's
         // RequestMappingInfo, but that requires injecting the RequestMappingHandlerMapping,
         // which adds complexity.
-        return requestURI.startsWith("/api/auth/") ||
+        return  requestURI.startsWith("/api/auth/") ||
+                requestURI.startsWith("/api/securemyself/") ||
+                requestURI.startsWith("/api/cities/") ||
+                requestURI.startsWith("/api/jarvis/") ||
                 requestURI.startsWith("/api/users/me") ||
-                requestURI.startsWith("/api/jobseekers/profile")|| // Add more as we develop the api
+                requestURI.startsWith("/api/employer") ||
+                requestURI.startsWith("/api/employers") ||
+                requestURI.startsWith("/api/jobseekers/")|| // Add more as we develop the api
                 requestURI.startsWith("/api/jobs");
         // Add other known API paths here
     }

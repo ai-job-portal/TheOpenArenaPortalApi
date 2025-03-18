@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
+
+    <changeSet id="create-jarvis-roles-table" author="your_name">
+        <createTable tableName="jarvis_roles">
+            <column name="jarvis_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="jarvis_roles"
+                                 baseColumnNames="jarvis_id"
+                                 constraintName="fk_jarvis_roles_jarvis"
+                                 referencedTableName="jarvis"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 onUpdate="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="jarvis_roles"
+                                 baseColumnNames="role_id"
+                                 constraintName="fk_jarvis_roles_roles"
+                                 referencedTableName="roles"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 onUpdate="CASCADE"/>
+
+        <addUniqueConstraint
+                columnNames="jarvis_id, role_id"
+                constraintName="uq_jarvis_roles"
+                tableName="jarvis_roles"/>
+    </changeSet>
+
+</databaseChangeLog>

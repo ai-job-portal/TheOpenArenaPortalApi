@@ -1,6 +1,5 @@
 package com.openarena.openarenaportalapi.config;
 
-
 import com.openarena.openarenaportalapi.security.JwtAuthenticationEntryPoint;
 import com.openarena.openarenaportalapi.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +10,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,11 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
-import org.springframework.web.filter.CorsFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 import java.util.List;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository; // Important!
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -56,30 +52,40 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-        http.csrf(AbstractHttpConfigurer::disable)
+        // CSRF Configuration (Key Changes)
+        CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+        requestHandler.setCsrfRequestAttributeName("_csrf"); // Use the default, but make it explicit
+        http.csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()) // Store token in a cookie
+                        .csrfTokenRequestHandler(requestHandler)
+                        .ignoringRequestMatchers("/securemyself/**")
+                )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Apply CORS config
-                .authorizeHttpRequests(
-                        (authorize) ->
-                                authorize
-                                        .requestMatchers("/auth/**")
-                                        .permitAll()
-                                        .requestMatchers("/swagger-ui/**")
-                                        .permitAll()
-                                        .requestMatchers("/v3/api-docs/**")
-                                        .permitAll()
-                                        .requestMatchers(HttpMethod.GET, "/api/**")
-                                        .permitAll() // Permit all GET requests.  Important!
-                                        .anyRequest()
-                                        .authenticated())
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .authorizeHttpRequests((authorize) ->
+                        //authorize.anyRequest().authenticated()
+                        authorize.requestMatchers("/jobseekers/profile/**").authenticated() // Secure profile endpoint
+                                .requestMatchers("/jarvis/**").permitAll()
+                                .requestMatchers("/auth/**").permitAll()// Allow register endpoint
+                                .requestMatchers("/securemyself/**").permitAll()// Allow login endpoint
+                                .requestMatchers("/cities/**").permitAll()
+                                .requestMatchers("/users/**").permitAll()
+                                .requestMatchers("/jobs/**").permitAll()// Allow all to see.
+                                .requestMatchers("/employer/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/jarvis/**").permitAll()
+                                .requestMatchers("/swagger-ui/**").permitAll()
+                                .requestMatchers("/v3/api-docs/**").permitAll()
+                                .requestMatchers("/employers/**").authenticated()
+                                .anyRequest().authenticated()
 
+                ).exceptionHandling( exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                ).sessionManagement( session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) //  Use sessions!
+                );
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -87,7 +93,6 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Include OPTIONS
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // Important for cookies
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration); // Apply to all paths
         return source;

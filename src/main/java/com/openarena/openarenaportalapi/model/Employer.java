@@ -1,9 +1,10 @@
 package com.openarena.openarenaportalapi.model;
 
+
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.HashSet;
@@ -53,8 +54,8 @@ public class Employer {
     @ToString.Exclude // Prevent circular references
     private Set<DeletedRecruiter> deletedRecruiters;
 
-    // Changed: One-to-many relationship with Recruiter
+    // Corrected: One-to-many relationship with RecruiterEmployer
     @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<Recruiter> recruiters = new HashSet<>();
+    private Set<RecruiterEmployer> recruiterEmployers = new HashSet<>();
 }

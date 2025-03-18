@@ -83,4 +83,7 @@ public class Job {
     @OneToMany(mappedBy = "job", fetch = FetchType.LAZY)
     @ToString.Exclude
     private Set<JobShare> shares = new HashSet<>();
+
+    @Column(name = "expiry_date")
+    private LocalDateTime expiryDate;
 }

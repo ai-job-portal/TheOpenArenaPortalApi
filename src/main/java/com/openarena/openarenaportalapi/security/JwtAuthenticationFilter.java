@@ -10,6 +10,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,7 +27,9 @@ import java.io.PrintWriter;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final UserDetailsServiceImpl userDetailsService; // Use your service
+    private static final String ACCESS_TOKEN_KEY = "accessToken"; // Key for session storage
+
+    private final UserDetailsServiceImpl userDetailsService;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Autowired
@@ -38,38 +42,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractAccessTokenFromCookie(request);
+        HttpSession session = request.getSession(false); // Get session, don't create if it doesn't exist
+        String token = null;
+
+        if (session != null) {
+            token = (String) session.getAttribute(ACCESS_TOKEN_KEY);
+        }
+
 
         if (StringUtils.hasText(token)) {
             try {
-                System.out.println("ValidateTokenFromCookie: " + token);
-
-                if (jwtTokenProvider.validateToken(token)) {
-                    String username = jwtTokenProvider.getUsername(token);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                    UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails, null, userDetails.getAuthorities());
-
-                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                } else {
-                    System.out.println("invalid token");
+                // Validate the token
+                if (!jwtTokenProvider.validateToken(token)) {
+                    throw new ExpiredJwtException(null, null, "Token has expired"); // Trigger expired case
                 }
-            } catch (ExpiredJwtException ex) { // Specifically catch ExpiredJwtException
-                // Token is expired.  Let it fall through to the filter chain.
-                // The AuthenticationEntryPoint will handle sending the 401.
-                // But, crucially, we do *not* set the SecurityContext, so the user
-                // will not be considered authenticated.
-                System.out.println("Token expired: " + ex.getMessage()); // Log for debugging
+
+                String username = jwtTokenProvider.getUsername(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                filterChain.doFilter(request, response); // Continue the filter chain
+                return;
+
+            } catch (ExpiredJwtException ex) {
+                // Handle expired token (could also remove from session here if desired)
+                if (session != null) {
+                    session.removeAttribute(ACCESS_TOKEN_KEY); // Remove expired token
+                }
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 PrintWriter out = response.getWriter();
                 out.print("{\"message\":\"Session expired. Please login again.\"}");
                 out.flush();
-                return; // Stop processing here.  Don't continue the filter chain.
-
+                return;
             } catch (Exception ex) {
                 // Handle other token validation exceptions
                 logger.error("Could not set user authentication in security context", ex);
@@ -78,22 +87,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 PrintWriter out = response.getWriter();
                 out.print("{\"message\":\"Invalid Token\"}");
                 out.flush();
-                return; // Stop processing.
+                return;
             }
         }
 
-        filterChain.doFilter(request, response); // Always continue the filter chain
+        filterChain.doFilter(request, response);  // No token, or token processed
     }
 
-    private String extractAccessTokenFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("accessToken".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
-    }
+
+    // No longer needed, we're using session storage.
+    // private String extractAccessTokenFromCookie(HttpServletRequest request) { ... }
 }

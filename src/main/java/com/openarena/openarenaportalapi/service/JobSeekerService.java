@@ -1,3 +1,4 @@
+/*
 package com.openarena.openarenaportalapi.service;
 
 
@@ -10,7 +11,6 @@ import com.openarena.openarenaportalapi.exceptions.NotFoundException;
 import com.openarena.openarenaportalapi.repository.JobSeekerRepository;
 import com.openarena.openarenaportalapi.repository.RoleRepository;
 import com.openarena.openarenaportalapi.util.ApiConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,4 +66,4 @@ public class JobSeekerService {
                 savedJobSeeker.getMobile()
         );
     }
-}
+}*/

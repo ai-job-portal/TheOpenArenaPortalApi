@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,12 +20,16 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor // Add this for easier construction in services/tests
-public class Recruiter implements UserDetails { // Implement UserDetails
+@AllArgsConstructor
+public class Recruiter extends Auditable implements UserDetails, User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne
+    @JoinColumn(name = "employer_id", referencedColumnName = "id") // Correct join column
+    private Employer employer;
 
     @Column(unique = true, nullable = false, length = 80)
     private String username;
@@ -32,7 +37,7 @@ public class Recruiter implements UserDetails { // Implement UserDetails
     @Column(unique = true, nullable = false, length = 120)
     private String email;
 
-    @Column(nullable = false, length = 128) // Increased length for hashed passwords
+    @Column(nullable = false, length = 128)
     private String password;
 
     @Column(length = 100)
@@ -40,12 +45,23 @@ public class Recruiter implements UserDetails { // Implement UserDetails
 
     @Column(length = 20)
     private String mobile;
+    //No need as per new relation
+    //@Column(name = "created_by")
+    // private Integer createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employer_id") // Corrected: Single employer
-    private Employer employer;
+    //@ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
+    // private Recruiter creator;
+    //No need as per new relation
+    // @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+    //private Set<Recruiter> createdRecruiters = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER) // EAGER for roles
+
+    // Use RecruiterEmployer for the association
+    @OneToMany(mappedBy = "recruiter", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<RecruiterEmployer> recruiterEmployers = new HashSet<>(); // Use the join table entity
+
+    @ManyToMany(fetch = FetchType.EAGER)  //Eager is generally discouraged. We need to discuss this
     @JoinTable(
             name = "recruiter_roles",
             joinColumns = @JoinColumn(name = "recruiter_id"),
@@ -54,69 +70,38 @@ public class Recruiter implements UserDetails { // Implement UserDetails
     private Set<Role> roles = new HashSet<>();
 
 
-    // --- Methods required by UserDetails ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toList());
-    }
 
+        List<SimpleGrantedAuthority> authorities = this.roles.stream().map((role)-> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
+        return authorities;
+    }
+    //Other methods remain the same
     @Override
     public boolean isAccountNonExpired() {
-        return true; // You can implement account expiry logic here
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true; // You can implement account locking logic here
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // You can implement password expiry logic here
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return true; // You can implement user enabling/disabling logic here
+        return true;
+    }
+    @Override
+    public Integer getId() {
+        return id;
     }
 
-    // --- Other potentially useful methods (not strictly part of UserDetails) ---
-    public void addRole(Role role) {
-        this.roles.add(role);
+    public String getName() {
+        return this.name;
     }
-
-    public void removeRole(Role role) {
-        this.roles.remove(role);
-    }
-    // --- Remove the old relationships.  These are no longer needed ---
-
-    //  @Column(name = "created_by") // Removed
-    //  private Integer createdBy;
-
-    //  @ManyToOne(fetch = FetchType.LAZY)
-    //  @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
-    // @ToString.Exclude
-    //  private Recruiter creator; // Removed
-
-    //   @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    //    @ToString.Exclude
-    //   private Set<Recruiter> createdRecruiters = new HashSet<>();
-
-    //    @ManyToMany
-    //   @JoinTable(
-    //        name = "recruiter_employer",  // We no longer use a join table directly
-    //        joinColumns = @JoinColumn(name = "recruiter_id"),
-    //        inverseJoinColumns = @JoinColumn(name = "employer_id")
-    //   )
-    //  @ToString.Exclude
-    //   private Set<Employer> employers = new HashSet<>();  // Removed
-
-    //    @ManyToMany(mappedBy = "sharedByRecruiter")
-    //   private Set<JobShare> sharedBy = new HashSet<>();
-
-    //    @ManyToMany(mappedBy = "sharedWithRecruiter")
-    //   private Set<JobShare> sharedWith = new HashSet<>();
-    //--- End of methods to Remove
 }

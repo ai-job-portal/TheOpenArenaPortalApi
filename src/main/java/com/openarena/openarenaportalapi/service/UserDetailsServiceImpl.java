@@ -1,8 +1,7 @@
 package com.openarena.openarenaportalapi.service;
 
-
-import com.openarena.openarenaportalapi.model.JobSeeker;
-import com.openarena.openarenaportalapi.model.Recruiter;
+import com.openarena.openarenaportalapi.model.*;
+import com.openarena.openarenaportalapi.repository.JarvisRepository;
 import com.openarena.openarenaportalapi.repository.JobSeekerRepository;
 import com.openarena.openarenaportalapi.repository.RecruiterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,33 +22,62 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final RecruiterRepository recruiterRepository;
     private final JobSeekerRepository jobSeekerRepository;
+    private final JarvisRepository jarvisRepository;
 
     @Autowired
-    public UserDetailsServiceImpl(RecruiterRepository recruiterRepository,JobSeekerRepository jobSeekerRepository) {
+    public UserDetailsServiceImpl(RecruiterRepository recruiterRepository, JobSeekerRepository jobSeekerRepository,JarvisRepository jarvisRepository) {
         this.recruiterRepository = recruiterRepository;
         this.jobSeekerRepository = jobSeekerRepository;
+        this.jarvisRepository = jarvisRepository;
     }
 
     @Override
-    @Transactional(readOnly = true) // Important for lazy loading of roles
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        // Try to find by username first
-        JobSeeker jobSeeker = jobSeekerRepository.findByUsername(usernameOrEmail).orElse(null);
-        // If not found by username, try by email
-        if (jobSeeker == null) {
-            jobSeeker = jobSeekerRepository.findByEmail(usernameOrEmail)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email : " + usernameOrEmail));
+        // Try to find as a Recruiter (Employer Login) first by username
+        Recruiter recruiter = recruiterRepository.findByUsername(usernameOrEmail).orElse(null);
+        if (recruiter != null) {
+            return recruiter; // Return Recruiter directly
         }
 
-        // Convert our JobSeeker to Spring Security's UserDetails
-        return new org.springframework.security.core.userdetails.User(
-                jobSeeker.getUsername(), jobSeeker.getPassword(), getAuthorities(jobSeeker));
+        // If not found as a Recruiter, try as a JobSeeker by username
+        JobSeeker jobSeeker = jobSeekerRepository.findByUsername(usernameOrEmail).orElse(null);
+        if (jobSeeker != null) {
+            return jobSeeker; // Return JobSeeker directly
+        }
+
+        // Try Jarvis by username
+        Jarvis jarvis = jarvisRepository.findByUsername(usernameOrEmail).orElse(null);
+        if (jarvis != null) {
+            return jarvis; // Return directly, Jarvis implements UserDetails
+        }
+
+        recruiter = recruiterRepository.findByEmail(usernameOrEmail).orElse(null);
+        if (recruiter != null) {
+            return recruiter;
+        }
+
+        // Finally try as a JobSeeker by email
+        jobSeeker = jobSeekerRepository.findByEmail(usernameOrEmail).orElse(null);
+        if (jobSeeker != null) {
+            return jobSeeker;
+        }
+        //Finally try to find jarvis by email
+        jarvis = jarvisRepository.findByEmail(usernameOrEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + usernameOrEmail));
+        return jarvis; // Return directly, Jarvis implements UserDetails
     }
 
-    private List<GrantedAuthority> getAuthorities(JobSeeker jobSeeker) {
-        // Get the roles from the JobSeeker entity. This uses the roles relationship.
-        return jobSeeker.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
+    // Helper method to create UserDetails from *any* User entity
+    private UserDetails buildUserDetails(User user) {
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(), user.getPassword(), getAuthorities(user));
+    }
+
+    // Helper method to get authorities (roles) from *any* User entity
+    private Collection<? extends GrantedAuthority> getAuthorities(User user) {
+        return user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName().toUpperCase())) //Consistent role names
                 .collect(Collectors.toList());
     }
 }
