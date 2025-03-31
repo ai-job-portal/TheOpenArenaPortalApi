@@ -1,12 +1,17 @@
+// src/main/java/com/openarena/openarenaportalapi/service/UserDetailsServiceImpl.java
 package com.openarena.openarenaportalapi.service;
 
 import com.openarena.openarenaportalapi.model.*;
 import com.openarena.openarenaportalapi.repository.JarvisRepository;
 import com.openarena.openarenaportalapi.repository.JobSeekerRepository;
 import com.openarena.openarenaportalapi.repository.RecruiterRepository;
+import com.openarena.openarenaportalapi.util.RequestContextHolder;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -25,7 +30,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final JarvisRepository jarvisRepository;
 
     @Autowired
-    public UserDetailsServiceImpl(RecruiterRepository recruiterRepository, JobSeekerRepository jobSeekerRepository,JarvisRepository jarvisRepository) {
+    public UserDetailsServiceImpl(RecruiterRepository recruiterRepository, JobSeekerRepository jobSeekerRepository, JarvisRepository jarvisRepository) {
         this.recruiterRepository = recruiterRepository;
         this.jobSeekerRepository = jobSeekerRepository;
         this.jarvisRepository = jarvisRepository;
@@ -34,38 +39,26 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        // Try to find as a Recruiter (Employer Login) first by username
-        Recruiter recruiter = recruiterRepository.findByUsername(usernameOrEmail).orElse(null);
-        if (recruiter != null) {
-            return recruiter; // Return Recruiter directly
-        }
 
-        // If not found as a Recruiter, try as a JobSeeker by username
-        JobSeeker jobSeeker = jobSeekerRepository.findByUsername(usernameOrEmail).orElse(null);
-        if (jobSeeker != null) {
-            return jobSeeker; // Return JobSeeker directly
-        }
+        HttpServletRequest request = RequestContextHolder.getRequest();
+        String userType = request != null ? request.getHeader("User-Type") : "none"; // Example: Get from request param
 
-        // Try Jarvis by username
-        Jarvis jarvis = jarvisRepository.findByUsername(usernameOrEmail).orElse(null);
-        if (jarvis != null) {
-            return jarvis; // Return directly, Jarvis implements UserDetails
-        }
-
-        recruiter = recruiterRepository.findByEmail(usernameOrEmail).orElse(null);
-        if (recruiter != null) {
-            return recruiter;
-        }
-
-        // Finally try as a JobSeeker by email
-        jobSeeker = jobSeekerRepository.findByEmail(usernameOrEmail).orElse(null);
-        if (jobSeeker != null) {
-            return jobSeeker;
-        }
-        //Finally try to find jarvis by email
-        jarvis = jarvisRepository.findByEmail(usernameOrEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + usernameOrEmail));
-        return jarvis; // Return directly, Jarvis implements UserDetails
+                switch (userType.toLowerCase()) {
+                    case "employer":
+                        return recruiterRepository.findByUsername(usernameOrEmail)
+                                .or(() -> recruiterRepository.findByEmail(usernameOrEmail))
+                                .orElseThrow(() -> new UsernameNotFoundException("Recruiter not found: " + usernameOrEmail));
+                    case "jobseeker":
+                        return jobSeekerRepository.findByUsername(usernameOrEmail)
+                                .or(() -> jobSeekerRepository.findByEmail(usernameOrEmail))
+                                .orElseThrow(() -> new UsernameNotFoundException("JobSeeker not found: " + usernameOrEmail));
+                    case "jarvis":
+                        return jarvisRepository.findByUsername(usernameOrEmail)
+                                .or(() -> jarvisRepository.findByEmail(usernameOrEmail))
+                                .orElseThrow(() -> new UsernameNotFoundException("Jarvis not found: " + usernameOrEmail));
+                    default:
+                        throw new IllegalArgumentException("Invalid user type: " + userType);
+                }
     }
 
     // Helper method to create UserDetails from *any* User entity

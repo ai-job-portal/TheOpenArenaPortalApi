@@ -15,4 +15,5 @@ public class JarvisLoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+    private String userType = "jarvis";
 }

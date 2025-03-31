@@ -15,4 +15,5 @@ public class EmployerLoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+    private String userType = "employer";
 }

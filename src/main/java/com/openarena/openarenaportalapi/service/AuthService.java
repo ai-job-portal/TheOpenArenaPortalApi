@@ -4,10 +4,10 @@ import com.openarena.openarenaportalapi.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthService {
-    JWTAuthResponse jobSeekerLogin(JobSeekerLoginRequest request, HttpServletRequest httpServletRequest);
+    JWTAuthResponse jobSeekerLogin(JobSeekerLoginRequest request);
     JobSeekerRegistrationResponse registerJobSeeker(JobSeekerRegistrationRequest registrationDTO);
-    JWTAuthResponse employerLogin(EmployerLoginRequest request,HttpServletRequest httpServletRequest);
+    JWTAuthResponse employerLogin(EmployerLoginRequest request);
     EmployerRegistrationResponse registerEmployer(EmployerRegistrationRequestDto request);
-    JWTAuthResponse jarvisLogin(JarvisLoginRequest request,HttpServletRequest httpServletRequest);
+    JWTAuthResponse jarvisLogin(JarvisLoginRequest request);
     void logout(HttpServletRequest httpServletRequest);
 }
