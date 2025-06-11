@@ -17,6 +17,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
@@ -97,8 +98,11 @@ public class AuthController {
     }
 
     @PostMapping("/jobseeker/register")
-    public ResponseEntity<JobSeekerRegistrationResponse> registerJobSeeker(@Valid @RequestBody JobSeekerRegistrationRequest registrationDTO) {
-        JobSeekerRegistrationResponse response = authService.registerJobSeeker(registrationDTO);
+    public ResponseEntity<JobSeekerRegistrationResponse> registerJobSeeker(
+            @Valid JobSeekerRegistrationRequest registrationDTO, // No @RequestBody, Spring maps form fields
+            @RequestParam(value = "resumeFile", required = true) MultipartFile resumeFile) { // "resumeFile" must match FormData key
+
+        JobSeekerRegistrationResponse response = authService.registerJobSeeker(registrationDTO, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 

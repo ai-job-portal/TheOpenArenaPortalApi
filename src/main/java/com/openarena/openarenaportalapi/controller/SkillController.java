@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/skills")
-@PreAuthorize("hasRole('ROLE_JARVIS')") // Secure endpoints
+//@PreAuthorize("hasRole('ROLE_JARVIS')") // Secure endpoints
 public class SkillController {
 
     private final SkillService skillService;
@@ -68,7 +68,7 @@ public class SkillController {
     }
 
     //For typeahead control
-    @GetMapping("/typeahead")
+    @GetMapping("/find")
     public ResponseEntity<List<SkillDTO>> searchSkills(@RequestParam(name = "q") String query){
         return new ResponseEntity<>(skillService.searchSkills(query), HttpStatus.OK);
     }

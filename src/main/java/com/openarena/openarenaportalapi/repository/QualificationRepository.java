@@ -32,15 +32,15 @@ public interface QualificationRepository extends JpaRepository<Qualification, In
     Page<Qualification> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     //find list by degree type
-    @Query("SELECT DISTINCT q.degreeType FROM Qualification q")
-    List<String> findDistinctDegreeTypes();
+    @Query("SELECT DISTINCT q.id, q.degreeType FROM Qualification q")
+    List<Object[]> findDistinctDegreeTypes();
 
     //find list by degree type and specialisation
-    @Query("SELECT DISTINCT q.specialisation FROM Qualification q WHERE q.degreeType = :degreeType")
-    List<String> findDistinctSpecialisationsByDegreeType(@Param("degreeType") String degreeType);
+    @Query("SELECT DISTINCT q.id,q.specialisation FROM Qualification q WHERE q.degreeType = :degreeType")
+    List<Object[]> findDistinctSpecialisationsByDegreeType(@Param("degreeType") String degreeType);
 
     //find list by degree type and specialisation and subtype
-    @Query("SELECT DISTINCT q.subtype FROM Qualification q WHERE q.degreeType = :degreeType AND q.specialisation = :specialisation")
-    List<String> findDistinctSubtypesByDegreeTypeAndSpecialisation(@Param("degreeType") String degreeType, @Param("specialisation") String specialisation);
+    @Query("SELECT DISTINCT q.id, q.subtype FROM Qualification q WHERE q.degreeType = :degreeType AND q.specialisation = :specialisation")
+    List<Object[]> findDistinctSubtypesByDegreeTypeAndSpecialisation(@Param("degreeType") String degreeType, @Param("specialisation") String specialisation);
 
 }

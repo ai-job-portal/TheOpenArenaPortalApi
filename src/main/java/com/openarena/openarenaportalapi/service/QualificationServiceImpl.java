@@ -139,17 +139,17 @@ public class QualificationServiceImpl implements QualificationService {
     }
 
     @Override
-    public List<String> getDegreeTypes(){
+    public List<Object[]> getDegreeTypes(){
         return qualificationRepository.findDistinctDegreeTypes();
     }
 
     @Override
-    public List<String> getSpecialization(String degreeType){
+    public List<Object[]> getSpecialization(String degreeType){
         return qualificationRepository.findDistinctSpecialisationsByDegreeType(degreeType);
     }
 
     @Override
-    public List<String> getSubtype(String degreeType, String specialisation){
+    public List<Object[]> getSubtype(String degreeType, String specialisation){
         return qualificationRepository.findDistinctSubtypesByDegreeTypeAndSpecialisation(degreeType, specialisation);
     }
 }

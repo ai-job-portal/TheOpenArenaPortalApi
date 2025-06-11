@@ -50,14 +50,8 @@ public class JobSeeker extends Auditable implements UserDetails, User{ // Extend
             joinColumns = @JoinColumn(name = "job_seeker_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
     )
+
     private Set<Role> roles = new HashSet<>();
-
-
-    // Password will be hashed by this method
-    public void setPassword(String rawPassword) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        this.password = passwordEncoder.encode(rawPassword);
-    }
 
     //  Add a method to check the password (important for login)
     public boolean checkPassword(String rawPassword) {

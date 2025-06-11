@@ -4,6 +4,7 @@ package com.openarena.openarenaportalapi.controller;
 import com.openarena.openarenaportalapi.dto.CreateJobDto;
 import com.openarena.openarenaportalapi.dto.JobDto;
 import com.openarena.openarenaportalapi.dto.UpdateJobDto;
+import com.openarena.openarenaportalapi.model.Employer;
 import com.openarena.openarenaportalapi.model.Recruiter;
 import com.openarena.openarenaportalapi.repository.RecruiterRepository;
 import com.openarena.openarenaportalapi.service.JobService;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +50,29 @@ public class JobController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ROLE_RECRUITER', 'ROLE_EMPLOYER')")
     public ResponseEntity<JobDto> createJob(@Valid @RequestBody CreateJobDto createJobDto) {
-        //TODO: get recruiter id from Authentication token
-        Integer recruiterId = 1; // Replace with actual authentication logic
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer recruiterId = null;
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+
+            // Check if the principal is your Recruiter entity
+            // Adjust the class 'Recruiter.class' and 'getId()' to match your actual entity
+            if (principal instanceof Recruiter) {
+                recruiterId = ((Recruiter) principal).getId(); // Assuming getId() returns Integer
+            }
+            else if (principal instanceof Employer) {
+              recruiterId = ((Employer) principal).getId();
+            }
+            // Add more 'else if' blocks if other principal types can represent a recruiter
+        }
+
+        if (recruiterId == null) {
+            // This means after checking all conditions, we couldn't get a recruiterId.
+            // This should ideally not happen if @PreAuthorize works and your principal is set correctly.
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Could not determine Recruiter ID for job posting. User may not be a valid Recruiter or Employer type for this action.");
+        }
+
         JobDto createdJob = jobService.createJob(createJobDto, recruiterId);
         return new ResponseEntity<>(createdJob, HttpStatus.CREATED); // Return 201 Created
     }

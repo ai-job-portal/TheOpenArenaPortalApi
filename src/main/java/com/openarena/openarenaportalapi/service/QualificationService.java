@@ -14,11 +14,11 @@ public interface QualificationService {
     void deleteQualification(Integer id);
     List<QualificationDTO> getRecentQualifications();
 
-    List<String> getDegreeTypes();
+    List<Object[]> getDegreeTypes();
 
-    List<String> getSpecialization(String degreeType);
+    List<Object[]> getSpecialization(String degreeType);
 
-    List<String> getSubtype(String degreeType, String specialisation);
+    List<Object[]> getSubtype(String degreeType, String specialisation);
     Page<QualificationDTO> getAllQualifications(Pageable pageable);
     Page<QualificationDTO> searchQualifications(String query, Pageable pageable);
     List<QualificationDTO> searchQualifications(String query);

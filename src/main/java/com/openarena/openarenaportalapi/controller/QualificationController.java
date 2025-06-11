@@ -9,14 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/qualifications")
-@PreAuthorize("hasRole('ROLE_JARVIS')")
 public class QualificationController {
 
     private final QualificationService qualificationService;
@@ -69,26 +67,26 @@ public class QualificationController {
     }
 
     //For typeahead control
-    @GetMapping("/typeahead")
+    @GetMapping("/find")
     public ResponseEntity<List<QualificationDTO>> searchQualification(@RequestParam(name = "q") String query){
         return new ResponseEntity<>(qualificationService.searchQualifications(query), HttpStatus.OK);
     }
 
     @GetMapping("/degree-types")
-    public ResponseEntity<List<String>> getDegreeTypes() {
-        List<String> degreeTypes = qualificationService.getDegreeTypes();
+    public ResponseEntity<List<Object[]>> getDegreeTypes() {
+        List<Object[]> degreeTypes = qualificationService.getDegreeTypes();
         return ResponseEntity.ok(degreeTypes);
     }
 
     @GetMapping("/specializations")
-    public ResponseEntity<List<String>> getSpecializations(@RequestParam("degreeType") String degreeType) {
-        List<String> specializations = qualificationService.getSpecialization(degreeType);
+    public ResponseEntity<List<Object[]>> getSpecializations(@RequestParam("degreeType") String degreeType) {
+        List<Object[]> specializations = qualificationService.getSpecialization(degreeType);
         return ResponseEntity.ok(specializations);
     }
 
     @GetMapping("/subtypes")
-    public  ResponseEntity<List<String>> getSubTypes(@RequestParam("degreeType") String degreeType, @RequestParam("specialisation") String specialisation){
-        List<String> subtypes = qualificationService.getSubtype(degreeType, specialisation);
+    public  ResponseEntity<List<Object[]>> getSubTypes(@RequestParam("degreeType") String degreeType, @RequestParam("specialisation") String specialisation){
+        List<Object[]> subtypes = qualificationService.getSubtype(degreeType, specialisation);
         return ResponseEntity.ok(subtypes);
     }
 }

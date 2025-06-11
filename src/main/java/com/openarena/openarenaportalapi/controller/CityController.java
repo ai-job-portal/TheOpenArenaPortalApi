@@ -16,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/cities")
-@PreAuthorize("hasRole('ROLE_JARVIS')") // Secure endpoints
 public class CityController {
 
     private final CityService cityService;
@@ -69,7 +68,7 @@ public class CityController {
     }
 
     //For typeahead control
-    @GetMapping("/typeahead")
+    @GetMapping("/find")
     public ResponseEntity<List<CityDTO>> searchCity(@RequestParam(name = "q") String query){
         return new ResponseEntity<>(cityService.searchCities(query), HttpStatus.OK);
     }

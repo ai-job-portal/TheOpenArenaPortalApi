@@ -34,3 +34,12 @@ jwt:
   secret: ${JWT_SECRET} # Replace
   expirationMs: ${JWT_EXPIRATION_MS}
   refreshExpirationMs: ${JWT_REFRESH_EXPIRATION_MS}
+
+aws:
+  s3:
+    endpoint-url: http://localhost:9000
+    access-key: minioadmin  # Use the same one you set for MinIO
+    secret-key: minioadmin123 # Use the same one you set for MinIO
+    region: us-east-1 # MinIO doesn't strictly use regions, but SDK might require one. 'us-east-1' is common.
+    bucket-name: jobseeker-resumes # The bucket you created in MinIO
+    path-style-access: true # Important for MinIO to use paths like http://localhost:9000/bucket-name/object-key
